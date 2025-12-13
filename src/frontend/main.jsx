@@ -3,12 +3,12 @@ import { MapContainer, TileLayer, Marker, Popup, LayersControl } from "react-lea
 import L from "leaflet";
 import RoutingMachine from "./RoutingMachine";
 import "./main.css";
-import img from "./asset/image/heartbeeeat.jpg";
 import carImg from "./asset/image/ambulance_15533330.svg";
 
 import DoctorInboxWidget from "./pages/DoctorInboxWidget";
 import DoctorConfirmModal from "./pages/DoctorConfirmModal";
 import { useAppointments } from "./state/AppointmentContext";
+import { Link } from "react-router-dom";
 
 // ===== Leaflet icon fix =====
 delete L.Icon.Default.prototype._getIconUrl;
@@ -73,6 +73,47 @@ const confirmed = useMemo(
     time: "",
     duration: "",
   });
+
+  // 醫療用品
+  const [supplies, setSupplies] = useState([
+      { name: 'Insulin (胰島素)', quantity: 20, unit: '支' },
+      { name: 'Antibiotics (抗生素)', quantity: 15, unit: '盒' },
+      { name: 'Glucagon (升糖素)', quantity: 5, unit: '支' },
+      { name: 'Glucose Meter (血糖機)', quantity: 3, unit: '台' },
+      { name: 'BP Monitor (血壓機)', quantity: 4, unit: '台' },
+      { name: 'Thermometer (耳溫槍)', quantity: 6, unit: '支' }
+  ]);
+  const [showSupplyModal, setShowSupplyModal] = useState(false);
+  const [supplyForm, setSupplyForm] = useState({ itemName: '', requestQty: 1 });
+
+  const handleSupplyRequest = () => {
+        const { itemName, requestQty } = supplyForm;
+        if (!itemName || requestQty <= 0) return alert("Please select an item and valid quantity.");
+
+        const targetItem = supplies.find(item => item.name === itemName);
+        if (targetItem && parseInt(requestQty) > targetItem.quantity) {
+            return alert(`Error: Request quantity exceeds available stock.`);
+        }
+        const updatedSupplies = supplies.map(item => {
+            if (item.name === itemName) return { ...item, quantity: item.quantity - parseInt(requestQty) };
+            return item;
+        }).filter(item => item.quantity > 0);
+
+        setSupplies(updatedSupplies);
+        setShowSupplyModal(false);
+        setSupplyForm({ itemName: updatedSupplies[0]?.name || '', requestQty: 1 });
+    };
+
+    const openSupplyModal = () => {
+        if (supplies.length > 0) setSupplyForm({ itemName: supplies[0].name, requestQty: 1 });
+        setShowSupplyModal(true);
+    };
+
+  // Patient Info Panel
+  const nextRouteStop = routePath.length > 0 ? routePath[0] : null;
+    const nextPatientDetail = nextRouteStop 
+        ? appointments.find(app => app.patientName === nextRouteStop.name && app.time === nextRouteStop.time)
+        : null;
 
   // ===== doctor selection modal =====
   const [showDocSelection, setShowDocSelection] = useState(false);
@@ -426,7 +467,7 @@ const confirmed = useMemo(
           <div className="barIndexBlock">
             <div className="flex-container">
               <div className="indexIcon" />
-              <p className="indexText">Appointments</p>
+              <Link to='/patient' className="indexText" style={{ color: 'black', textDecoration: 'none'}}>Appointments</Link>
             </div>
           </div>
         </div>
@@ -554,44 +595,91 @@ const confirmed = useMemo(
                     )}
                   </div>
 
-                  {/* Dispatch widgets */}
-                  <div className="flex-container" style={{ marginTop: 10, gap: 10 }}>
-                    <div id="pendingAppoint" style={{ flex: 1, padding: 10, backgroundColor: "#e3f2fd", borderRadius: 10 }}>
-                      <p style={{ fontWeight: "bold", fontSize: "0.9em" }}>Doctor Conflict</p>
-                      <input
-                        type="text"
-                        value={targetAppointId}
-                        onChange={(e) => setTargetAppointId(e.target.value)}
-                        style={{ width: 80, fontSize: "0.8em" }}
-                      />
-                      <button
-                        onClick={handleFindAlternatives}
-                        style={{ cursor: "pointer", backgroundColor: "#2196f3", color: "white", border: "none", borderRadius: 5, padding: 6, width: "100%", marginTop: 6 }}
-                      >
-                        Find Alternative
-                      </button>
-                      {alternatives?.alternatives?.length > 0 && (
-                        <div style={{ fontSize: "0.8em", color: "green", marginTop: 6 }}>Rec: {alternatives.alternatives[0].name}</div>
-                      )}
-                    </div>
-
-                    <div id="confirmSchedule" style={{ flex: 1, padding: 10, backgroundColor: "#fff3e0", borderRadius: 10 }}>
-                      <p style={{ fontWeight: "bold", fontSize: "0.9em" }}>Car Status</p>
-                      <button
-                        onClick={handleFindBackupCars}
-                        style={{ cursor: "pointer", backgroundColor: "#ff9800", color: "white", border: "none", borderRadius: 5, padding: 8, width: "100%" }}
-                      >
-                        Find Cars
-                      </button>
-                      {backupCars.length > 0 && <div style={{ fontSize: "0.8em", color: "green", marginTop: 6 }}>Avail: {backupCars.length}</div>}
+                  {/* Medical Supplies */}
+                  {showSupplyModal && (
+                      <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+                          <div style={{backgroundColor: 'white', padding: '20px', borderRadius: '10px', width: '300px', boxShadow: '0 4px 8px rgba(0,0,0,0.2)'}}>
+                              <h3 style={{marginTop: 0, color: '#3D0C02'}}>Request Supplies</h3>
+                              <div style={{display:'flex', flexDirection:'column', gap:'15px'}}>
+                                  <select value={supplyForm.itemName} onChange={(e) => setSupplyForm({...supplyForm, itemName: e.target.value})} style={{width:'100%', padding:'5px'}}>
+                                      {supplies.map((item, i) => (
+                                          <option key={i} value={item.name}>{item.name} (剩餘: {item.quantity})</option>
+                                      ))}
+                                  </select>
+                                  <input type="number" min="1" value={supplyForm.requestQty} onChange={(e) => setSupplyForm({...supplyForm, requestQty: e.target.value})} style={{width:'100%', padding:'5px'}} />
+                                  <div style={{display:'flex', justifyContent:'flex-end', gap:'10px'}}>
+                                      <button onClick={() => setShowSupplyModal(false)}>Cancel</button>
+                                      <button onClick={handleSupplyRequest} style={{backgroundColor:'#2E7D32', color:'white', border:'none', borderRadius:'5px', padding:'5px 15px'}}>Confirm</button>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  )}
+                  <div className="flex-container" style={{}}>
+                    <div id='medicalSupplies' style={{
+                        flex: 1, 
+                        padding: '15px', 
+                        backgroundColor: '#FDFFF5', 
+                        borderRadius: '20px', 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        justifyContent: 'space-between',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                        borderLeft: '5px solid #3AA8C1'
+                    }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom: '2px solid #eee', paddingBottom:'5px' }}>
+                            <p style={{fontWeight:'bold', fontSize:'1.1em', margin:0}}>Medical Supplies</p>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', marginTop: '10px', paddingRight: '5px' }}>
+                            {supplies.map((item, idx) => (
+                                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px dashed #ccc', fontSize: '0.95em' }}>
+                                    <span>{item.name}</span>
+                                    <span style={{ fontWeight: 'bold', color: '#e65100' }}>{item.quantity} {item.unit}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{ marginTop: '10px', display:'flex', justifyContent:'flex-end' }}>
+                            <button onClick={openSupplyModal} style={{cursor:'pointer', backgroundColor:'#ff9800', color:'white', border:'none', borderRadius:'5px', padding:'6px 12px', fontSize:'0.9em', fontWeight:'bold'}}>+ Request</button>
+                        </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div id="patientInfo">
-                <p>Patient Monitoring</p>
-                <img src={img} alt="heartbeat" style={{ width: "100%", borderRadius: 10 }} />
+              <div id='patientInfo' style={{
+                  flex: 2,
+                  display: 'flex',
+                  flexDirection: 'column', 
+                  backgroundColor: 'var(--card-bg)',
+                  borderRadius: 'var(--card-radius)',
+                  padding: 'var(--card-padding)',
+                  overflowY: 'auto',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                  borderLeft: '5px solid var(--color-pinegreen)',
+              }}>
+                  <p style={{fontWeight: 'bold', fontSize: '1.2em', marginBottom: '10px', borderBottom: '2px solid #eee', paddingBottom: '5px', width: '100%'}}>
+                      Next Patient Info
+                  </p>
+                  {nextPatientDetail ? (
+                      <div style={{width: '100%', fontSize: '1.1em', lineHeight: '1.6'}}>
+                          <div><span style={{color: '#666'}}>Name:</span> <b>{nextPatientDetail.patientName}</b></div>
+                          <div><span style={{color: '#666'}}>ID:</span> {nextPatientDetail.patientId}</div>
+                          <div><span style={{color: '#666'}}>Time:</span> <span style={{color: '#d32f2f', fontWeight: 'bold'}}>{nextPatientDetail.time}</span></div>
+                          <div><span style={{color: '#666'}}>Bio:</span> {nextPatientDetail.patientAge}歲 / {nextPatientDetail.patientBlood}{nextPatientDetail.patientRh}</div>
+                          <div style={{marginTop: '10px', borderTop:'1px dashed #ccc', paddingTop:'5px'}}>
+                              <span style={{color: '#666', display: 'block', fontWeight:'bold'}}>Case:</span>
+                              <span style={{fontSize: '0.9em'}}>{nextPatientDetail.caseDetails}</span>
+                          </div>
+                          <div style={{marginTop: '5px'}}>
+                              <span style={{color: '#666', display: 'block', fontWeight:'bold'}}>Address:</span>
+                              <span style={{fontSize: '0.9em'}}>{nextPatientDetail.address}</span>
+                          </div>
+                      </div>
+                  ) : (
+                      <div style={{textAlign: 'center', color: '#999', marginTop: '20px'}}>
+                          {selectedDoctor ? "No upcoming patients." : "Select a doctor to view."}
+                      </div>
+                  )}
               </div>
             </div>
           </div>

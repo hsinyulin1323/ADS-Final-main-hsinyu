@@ -6,7 +6,6 @@ export default function DoctorInboxWidget({ pendingCount, scheduledCount, onClic
         borderRadius: 12,
         padding: 12,
         background: "rgba(255,255,255,0.9)",
-        marginBottom: 10,
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
