@@ -10,7 +10,7 @@ export default function Sidebar({ brand = 'G0u0dEar', dashboardTo = "/patient" }
     <div id="leftSideBar">
       <p style={{ fontWeight: "bold", fontSize: 24, marginBottom: 20 }}>{brand}</p>
 
-      <SideNavItem to={dashboardTo} icon={dashboardIcon} label="Dashboard" />
+      <SideNavItem to="/" icon={dashboardIcon} label="Dashboard" />
       <SideNavItem to="/patient/team" icon={teamIcon} label="TeamInfo" />
 
       <SideExternalItem

@@ -15,7 +15,7 @@ export default function Sidebar({ brand = "GoooodEar" }) {
         {brand}
       </p>
 
-      <SideNavItem to="/main" icon={dashboardIcon} label="Dashboard" />
+      <SideNavItem to="/patient" icon={dashboardIcon} label="Make Appointment" />
       <SideNavItem to="/team" icon={teamIcon} label="TeamInfo" />
       <SideNavItem to="/modal" icon={scheduleIcon} label="Scheduler" />
       <SideNavItem to="./frontend/main" icon={equipmentIcon} label="Equipment Management" />
