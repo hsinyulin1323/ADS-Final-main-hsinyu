@@ -6,11 +6,6 @@ import AppointmentList from "./AppointmentList";
 import Sidebar from "../components/Sidebar_Patient"; 
 import "../main.css";
 
-import dashboardIcon from "../asset/image/icon/dashboard.png";
-import teamIcon from "../asset/image/icon/team.png";
-import webIcon from "../asset/image/icon/web.png";
-import pinIcon from "../asset/image/icon/pin.png";
-
 export default function PatientMain() {
   return (
     <div className="main">
