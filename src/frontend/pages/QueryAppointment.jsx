@@ -6,14 +6,9 @@ function normalizePid(v) {
   return String(v || "").trim().toUpperCase();
 }
 
-// 盡量從不同格式取出 date / slot
 function getDateSlot(appt) {
-  const rawScheduled =
-    appt?.scheduledAt ||
-    appt?.appointment?.scheduledAt ||
-    "";
+  const rawScheduled = appt?.scheduledAt || appt?.appointment?.scheduledAt || "";
 
-  // ✅ 新格式：scheduledAt 可能就是 "YYYY-MM-DD"
   const date =
     appt?.date ||
     appt?.appointment?.date ||
@@ -28,9 +23,8 @@ function getDateSlot(appt) {
     appt?.appointment?.timeSlot ||
     appt?.slot ||
     appt?.appointment?.slot ||
-    ""; // "AM" | "PM"
+    "";
 
-  // ✅ 舊格式 fallback：time or scheduledAt
   const timeText =
     appt?.time ||
     appt?.appointment?.time ||
@@ -46,7 +40,7 @@ function slotLabel(slot) {
   return slot || "—";
 }
 
-export default function QueryAppointment() {
+export default function QueryAppointment({ onResults, onClear }) {
   const [pid, setPid] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -55,8 +49,9 @@ export default function QueryAppointment() {
   const handleSearch = async () => {
     const trimmed = normalizePid(pid);
     if (!trimmed) {
-      setError("Please enter PID / ID (e.g., B123456789).");
+      setError("Please enter ID (e.g., B123456789).");
       setResults([]);
+      onResults?.([]); // ✅ 清空父層
       return;
     }
 
@@ -71,7 +66,6 @@ export default function QueryAppointment() {
       const all = await res.json();
       const arr = Array.isArray(all) ? all : [];
 
-      // ✅ 病人ID：身分證字號
       const filtered = arr.filter((a) => {
         const apptPid =
           a.patientId ??
@@ -83,7 +77,6 @@ export default function QueryAppointment() {
         return normalizePid(apptPid) === trimmed;
       });
 
-      // ✅ 排序：date -> AM/PM -> timeText
       filtered.sort((a, b) => {
         const A = getDateSlot(a);
         const B = getDateSlot(b);
@@ -99,17 +92,26 @@ export default function QueryAppointment() {
       });
 
       setResults(filtered);
-      if (filtered.length === 0) setError("No appointments found for this ID.");
+
+      if (filtered.length === 0) {
+        setError("No appointments found for this ID.");
+        onResults?.([]); // ✅ 父層也清空
+      } else {
+        // ✅ 轉成 view model 丟給父層
+        onResults?.(toViewResults(filtered));
+      }
     } catch (e) {
       console.error(e);
       setError("Failed to query appointments. Please check backend (port 5001) and API path.");
+      onResults?.([]); // ✅ 父層清空避免顯示舊資料
     } finally {
       setLoading(false);
     }
   };
 
-  const viewResults = useMemo(() => {
-    return results.map((appt, idx) => {
+  // ✅ 把你原本的 useMemo 抽成 function，這樣父層也能用同格式
+  function toViewResults(list) {
+    return list.map((appt, idx) => {
       const { date, timeSlot, timeText } = getDateSlot(appt);
 
       const id =
@@ -142,7 +144,6 @@ export default function QueryAppointment() {
           ? String(timeText).replace("T", " ")
           : "(no date/slot)";
 
-      // ✅ key：避免 id 空/重複造成 list render 怪異
       const key = id ? `${id}` : `${patientId}-${whenText}-${subject}-${idx}`;
 
       return {
@@ -158,7 +159,7 @@ export default function QueryAppointment() {
         subject,
       };
     });
-  }, [results]);
+  }
 
   return (
     <div>
@@ -205,6 +206,8 @@ export default function QueryAppointment() {
             setPid("");
             setResults([]);
             setError("");
+            onResults?.([]);
+            onClear?.();
           }}
           style={{
             padding: "9px 14px",
@@ -220,47 +223,6 @@ export default function QueryAppointment() {
       </div>
 
       {error && <div style={{ marginTop: 12, color: "#b71c1c", fontWeight: 700 }}>{error}</div>}
-
-      <div style={{ marginTop: 14 }}>
-        {viewResults.length > 0 && (
-          <div style={{ fontSize: 14, color: "#555", marginBottom: 8 }}>
-            Found <b>{viewResults.length}</b> appointment(s).
-          </div>
-        )}
-
-        {viewResults.map((appt) => (
-          <div
-            key={appt._key}
-            style={{
-              border: "1px solid #ddd",
-              borderRadius: 12,
-              padding: 12,
-              marginBottom: 10,
-              background: "white",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <div style={{ fontWeight: 900, fontSize: 16 }}>{appt.whenText}</div>
-              <div
-                style={{
-                  fontWeight: 800,
-                  color: String(appt.status).toUpperCase().includes("PENDING") ? "orange" : "#2E7D32",
-                }}
-              >
-                {appt.status}
-              </div>
-            </div>
-
-            <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6 }}>
-              <div><b>Appointment ID:</b> {appt.id}</div>
-              <div><b>Patient:</b> {appt.patientName} ({appt.patientId})</div>
-              <div><b>Subject:</b> {appt.subject}</div>
-              <div><b>Doctor:</b> {appt.doctorName} ({appt.doctorId})</div>
-              <div><b>Location:</b> {appt.location}</div>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

@@ -8,7 +8,12 @@ import carImg from "./asset/image/ambulance_15533330.svg";
 import DoctorInboxWidget from "./pages/DoctorInboxWidget";
 import DoctorConfirmModal from "./pages/DoctorConfirmModal";
 import { useAppointments } from "./state/AppointmentContext";
+
 import { Link } from "react-router-dom";
+
+import { NavLink } from "react-router-dom";
+import Sidebar from "./components/Sidebar_Doctor"; 
+
 
 // ===== Leaflet icon fix =====
 delete L.Icon.Default.prototype._getIconUrl;
@@ -454,24 +459,11 @@ const confirmed = useMemo(
         </Overlay>
       )}
 
-      <div className="flex-container" id="mainDisplay">
-        {/* ===== Left sidebar ===== */}
-        <div id="leftSideBar">
-          <p style={{ fontWeight: "bold", fontSize: 24, marginBottom: 20 }}>MediCare</p>
-          <div className="barIndexBlock">
-            <div className="flex-container">
-              <div className="indexIcon" />
-              <p className="indexText">Dashboard</p>
-            </div>
-          </div>
-          <div className="barIndexBlock">
-            <div className="flex-container">
-              <div className="indexIcon" />
-              <Link to='/patient' className="indexText" style={{ color: 'black', textDecoration: 'none'}}>Appointments</Link>
-            </div>
-          </div>
-        </div>
 
+      <div className="flex-container" id="mainDisplay">
+        {/* ===== LeftSide bar ===== */}
+        <Sidebar dashboardTo="/patient" />
+        
         {/* ===== Mid ===== */}
         <div className="flex-container-vertical" id="midDisplay">
           <div id="midTopDisplay">
@@ -975,3 +967,14 @@ const overlayCardStyle = {
   overflowY: "auto",
   boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
 };
+
+const navItemStyle = ({ isActive }) => ({
+  display: "block",
+  padding: "10px 12px",
+  borderRadius: 12,
+  textDecoration: "none",
+  fontWeight: 800,
+  color: isActive ? "white" : "#333",
+  background: isActive ? "#2E7D32" : "transparent",
+  marginBottom: 8,
+});

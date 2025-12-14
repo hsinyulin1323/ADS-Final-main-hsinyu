@@ -29,79 +29,42 @@ const MOCK_APPOINTMENTS = [
   },
 ];
 
-export default function AppointmentList() {
-  const [appointments, setAppointments] = useState(MOCK_APPOINTMENTS);
-  const [message, setMessage] = useState("");
+export default function AppointmentList({ items }) {
+  const list = Array.isArray(items) ? items : [];
 
-  function handleDelete(apptId) {
-    const ok = window.confirm("確定要刪除這筆預約嗎？");
-    if (!ok) return;
-
-    setAppointments((prev) => prev.filter((a) => a.id !== apptId));
-    setMessage(`預約 ${apptId} 已刪除`);
+  if (list.length === 0) {
+    return <p style={{ color: "#777" }}>目前沒有任何預約。</p>;
   }
 
   return (
     <div>
-      <h2>我的預約</h2>
-
-      {message && <div style={{ marginBottom: 12, color: "#2E7D32" }}>{message}</div>}
-
-      {appointments.length === 0 ? (
-        <p style={{ color: "#777" }}>目前沒有任何預約。</p>
-      ) : (
-        appointments.map((a) => (
-          <div
-            key={a.id}
-            style={{
-              border: "1px solid #ddd",
-              borderRadius: 12,
-              padding: 12,
-              marginBottom: 10,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 800 }}>
-                {a.subject} · {a.doctorName}
-              </div>
-
-              <div style={{ fontSize: 14, marginTop: 4 }}>
-                {a.date || "—"} · {slotLabel(a.timeSlot)}
-              </div>
-
-              {a.symptoms ? (
-                <div style={{ fontSize: 13, color: "#444", marginTop: 6, overflowWrap: "anywhere" }}>
-                  <b>Symptoms:</b> {a.symptoms}
-                </div>
-              ) : null}
-
-              <div style={{ fontSize: 12, color: "#777", marginTop: 6 }}>
-                Status: {a.status}
-              </div>
+      {list.map((a) => (
+        <div
+          key={a._key ?? a.id}
+          style={{
+            border: "1px solid #ddd",
+            borderRadius: 12,
+            padding: 12,
+            marginBottom: 10,
+            background: "white",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ fontWeight: 900, fontSize: 16 }}>{a.whenText}</div>
+            <div style={{ fontWeight: 800, color: String(a.status).toUpperCase().includes("PENDING") ? "orange" : "#2E7D32" }}>
+              {a.status}
             </div>
-
-            <button
-              onClick={() => handleDelete(a.id)}
-              style={{
-                background: "#C62828",
-                color: "white",
-                border: "none",
-                borderRadius: 10,
-                padding: "8px 12px",
-                cursor: "pointer",
-                fontWeight: 700,
-                flexShrink: 0,
-              }}
-            >
-              刪除
-            </button>
           </div>
-        ))
-      )}
+
+          <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6 }}>
+            <div><b>Appointment ID:</b> {a.id}</div>
+            <div><b>Patient:</b> {a.patientName} ({a.patientId})</div>
+            <div><b>Subject:</b> {a.subject}</div>
+            <div><b>Doctor:</b> {a.doctorName} ({a.doctorId})</div>
+            <div><b>Location:</b> {a.location}</div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
